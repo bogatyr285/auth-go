@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"crypto/rsa"
+	"crypto/ed25519"
 	"fmt"
 	"time"
 
@@ -20,20 +20,17 @@ var (
 type JWTManager struct {
 	issuer     string
 	expiresIn  time.Duration
-	publicKey  interface{}
-	privateKey interface{}
+	publicKey  ed25519.PublicKey
+	privateKey ed25519.PrivateKey
 }
 
 func NewJWTManager(issuer string, expiresIn time.Duration, publicKey, privateKey []byte) (*JWTManager, error) {
-	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
-	}
-	// TODO use Ed algs
+	pubKey := ed25519.PublicKey(publicKey)
+	privKey := ed25519.PrivateKey(privateKey)
 
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
+	// Проверка корректности ключей
+	if len(pubKey) != ed25519.PublicKeySize || len(privKey) != ed25519.PrivateKeySize {
+		return nil, ErrKeyParsing
 	}
 
 	return &JWTManager{
@@ -45,16 +42,16 @@ func NewJWTManager(issuer string, expiresIn time.Duration, publicKey, privateKey
 }
 
 func (j *JWTManager) IssueToken(userID string) (string, error) {
-	claims := jwt.MapClaims{
-		"iss": j.issuer,
-		"sub": userID,
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(j.expiresIn).Unix(),
+	claims := jwt.RegisteredClaims{
+		Issuer:    j.issuer,
+		Subject:   userID,
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.expiresIn)),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 
-	signed, err := token.SignedString(j.privateKey.(*rsa.PrivateKey))
+	signed, err := token.SignedString(j.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", ErrSigning, err)
 	}
@@ -63,14 +60,11 @@ func (j *JWTManager) IssueToken(userID string) (string, error) {
 
 func (j *JWTManager) VerifyToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, ErrValidation
 		}
 		return j.publicKey, nil
-	},
-		jwt.WithIssuer(j.issuer),
-		jwt.WithExpirationRequired(),
-	)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrValidation, err)
 	}

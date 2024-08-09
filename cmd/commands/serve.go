@@ -66,6 +66,22 @@ func NewServeCmd() *cobra.Command {
 				jwtManager,
 				buildinfo.New())
 
+			//// Добавление обработчика для генерации JWT
+			//router.Post("/auth/token", func(w http.ResponseWriter, r *http.Request) {
+			//	userID := "example-user-id"
+			//
+			//	token, err := jwtManager.IssueToken(userID)
+			//	if err != nil {
+			//		http.Error(w, "Could not generate token", http.StatusInternalServerError)
+			//		return
+			//	}
+			//
+			//	w.Header().Set("Content-Type", "application/json")
+			//	w.WriteHeader(http.StatusOK)
+			//	w.Write([]byte(fmt.Sprintf(`{"token": "%s"}`, token)))
+			//})
+			// example: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdXRoLXNlcnZpY2UiLCJzdWIiOiJleGFtcGxlLXVzZXItaWQiLCJleHAiOjE3MjMyNTQ1OTgsImlhdCI6MTcyMzIxMTM5OH0.3r2VDnclhyn4mwquxkKrhxoxjDTQQ00D21xy3h1G-cSNZTwgIJRlQ6mJz_2R85Yd68bst4KSnnHzL2eifierCA
+
 			httpServer := http.Server{
 				Addr:         cfg.HTTPServer.Address,
 				ReadTimeout:  cfg.HTTPServer.Timeout,
