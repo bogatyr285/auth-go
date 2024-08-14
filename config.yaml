@@ -1,8 +1,0 @@
-http_server:
-  address: ":8081"
-  timeout: "2s"
-jwt:
-  issuer: auth-service
-  expires_in: 12h
-  public_key: /Users/bogatyr/work/go/src/github.com/bogatyr285/auth-go/jwtRS256.key.pub   
-  private_key: /Users/bogatyr/work/go/src/github.com/bogatyr285/auth-go/jwtRS256.key

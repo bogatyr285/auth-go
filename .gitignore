@@ -4,3 +4,6 @@
 *.key
 *.pub
 config.yaml
+go_build*
+db.sqlite
+/bin/*

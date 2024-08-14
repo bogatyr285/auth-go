@@ -86,7 +86,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /users/{id}:
+    get:
+      summary: Get build information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Build information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  /refresh:
+    post:
+      summary: Generate new token pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: New token pair generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     RegisterUserRequest:
@@ -133,11 +183,13 @@ components:
     LoginUserResponse:
       type: object
       properties:
-        accessToken:
+        access_token:
           type: string
-          description: JWT token for accessing protected routes
+        refresh_token:
+          type: string
       required:
-        - accessToken
+        - access_token
+        - refresh_token
     
     BuildInfo:
       type: object
@@ -180,3 +232,35 @@ components:
           description: Description of the error
       required:
         - error
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the user
+        username:
+          type: string
+          description: Username of the user
+      required:
+        - id
+        - username
+
+    TokenRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+      required:
+        - refresh_token
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+      required:
+        - access_token
+        - refresh_token

@@ -24,14 +24,14 @@ type GRPCServer struct {
 }
 
 type Storage struct {
-	SQLitePath string `yaml:"path" env-default:"db.sql"`
+	SQLitePath string `yaml:"path" env-default:"db.sqlite"`
 }
 
 type JWT struct {
 	Issuer     string        `yaml:"issuer"`
 	ExpiresIn  time.Duration `yaml:"expires_in"`
-	PublicKey  string        `yaml:"public_key_path"`
-	PrivateKey string        `yaml:"private_key_path"`
+	PublicKey  string        `yaml:"public_key"`
+	PrivateKey string        `yaml:"private_key"`
 }
 
 func Parse(s string) (*Config, error) {
@@ -44,10 +44,12 @@ func Parse(s string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	publicKey, err := os.ReadFile(c.JWT.PublicKey)
 	if err != nil {
 		return nil, err
 	}
+
 	c.JWT.PrivateKey = string(privateKey)
 	c.JWT.PublicKey = string(publicKey)
 

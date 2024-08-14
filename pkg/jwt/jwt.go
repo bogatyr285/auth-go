@@ -25,13 +25,12 @@ type JWTManager struct {
 }
 
 func NewJWTManager(issuer string, expiresIn time.Duration, publicKey, privateKey []byte) (*JWTManager, error) {
-	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
+	pubKey, err := jwt.ParseEdPublicKeyFromPEM(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
 	}
-	// TODO use Ed algs
 
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	privKey, err := jwt.ParseEdPrivateKeyFromPEM(privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
 	}

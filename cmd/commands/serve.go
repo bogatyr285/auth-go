@@ -35,17 +35,10 @@ func NewServeCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 			defer cancel()
 
-			router := chi.NewRouter()
-			router.Use(middleware.Logger)
-			router.Use(middleware.RequestID)
-			router.Use(middleware.Recoverer)
-
 			cfg, err := config.Parse(configPath)
 			if err != nil {
 				return err
 			}
-			// TODO hide creds
-			slog.Info("loaded cfg", slog.Any("cfg", cfg))
 
 			storage, err := repository.New(cfg.Storage.SQLitePath)
 			if err != nil {
@@ -65,7 +58,16 @@ func NewServeCmd() *cobra.Command {
 			useCase := usecase.NewUseCase(&storage,
 				passwordHasher,
 				jwtManager,
-				buildinfo.New())
+				buildinfo.New(),
+			)
+
+			router := chi.NewRouter()
+			router.Use(middleware.Logger)
+			router.Use(middleware.RequestID)
+			router.Use(middleware.Recoverer)
+			router.Route("/users", func(r chi.Router) {
+				router.Use(useCase.AuthMiddleware)
+			})
 
 			httpServer := http.Server{
 				Addr:         cfg.HTTPServer.Address,
@@ -86,7 +88,7 @@ func NewServeCmd() *cobra.Command {
 			}
 
 			go func() {
-				if err := httpServer.ListenAndServe(); err != nil {
+				if err = httpServer.ListenAndServe(); err != nil {
 					log.Error("ListenAndServe", slog.Any("err", err))
 				}
 			}()
@@ -94,11 +96,11 @@ func NewServeCmd() *cobra.Command {
 			<-ctx.Done()
 
 			closeCtx, _ := context.WithTimeout(context.Background(), time.Second*5)
-			if err := httpServer.Shutdown(closeCtx); err != nil {
+			if err = httpServer.Shutdown(closeCtx); err != nil {
 				log.Error("httpServer.Shutdown", slog.Any("err", err))
 			}
 
-			if err := storage.Close(); err != nil {
+			if err = storage.Close(); err != nil {
 				log.Error("storage.Close", slog.Any("err", err))
 			}
 
