@@ -30,6 +30,7 @@ func NewServeCmd() *cobra.Command {
 		Aliases: []string{"s"},
 		Short:   "Start API server",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var configPath string = "./config.yaml"
 			log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
 			ctx, cancel := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)

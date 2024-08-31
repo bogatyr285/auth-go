@@ -3,4 +3,6 @@
 ./build
 *.key
 *.pub
+*.pem
 config.yaml
+.idea

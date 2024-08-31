@@ -4,5 +4,7 @@ http_server:
 jwt:
   issuer: auth-service
   expires_in: 12h
-  public_key: /Users/bogatyr/work/go/src/github.com/bogatyr285/auth-go/jwtRS256.key.pub   
-  private_key: /Users/bogatyr/work/go/src/github.com/bogatyr285/auth-go/jwtRS256.key
+#  public_key_path: "jwtRS256.key.pub"
+#  private_key_path: "jwtRS256.key"
+  public_key_path: "public_key.pem"
+  private_key_path: "private_key.pem"

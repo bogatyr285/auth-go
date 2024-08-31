@@ -1,7 +1,9 @@
 package jwt
 
 import (
-	"crypto/rsa"
+	"crypto/ed25519"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"time"
 
@@ -24,23 +26,42 @@ type JWTManager struct {
 	privateKey interface{}
 }
 
-func NewJWTManager(issuer string, expiresIn time.Duration, publicKey, privateKey []byte) (*JWTManager, error) {
-	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
+func NewJWTManager(issuer string, expiresIn time.Duration, publicKeyPEM, privateKeyPEM []byte) (*JWTManager, error) {
+	// Parse the public key
+	block, _ := pem.Decode(publicKeyPEM)
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, fmt.Errorf("%w: invalid public key PEM", ErrKeyParsing)
+	}
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
 	}
-	// TODO use Ed algs
 
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	edPubKey, ok := pubKey.(ed25519.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("%w: not an Ed25519 public key", ErrKeyParsing)
+	}
+
+	// Parse the private key
+	block, _ = pem.Decode(privateKeyPEM)
+	if block == nil || block.Type != "PRIVATE KEY" {
+		return nil, fmt.Errorf("%w: invalid private key PEM", ErrKeyParsing)
+	}
+	privKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
+	}
+
+	edPrivKey, ok := privKey.(ed25519.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("%w: not an Ed25519 private key", ErrKeyParsing)
 	}
 
 	return &JWTManager{
 		issuer:     issuer,
 		expiresIn:  expiresIn,
-		publicKey:  pubKey,
-		privateKey: privKey,
+		publicKey:  edPubKey,
+		privateKey: edPrivKey,
 	}, nil
 }
 
@@ -52,9 +73,9 @@ func (j *JWTManager) IssueToken(userID string) (string, error) {
 		"exp": time.Now().Add(j.expiresIn).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 
-	signed, err := token.SignedString(j.privateKey.(*rsa.PrivateKey))
+	signed, err := token.SignedString(j.privateKey.(ed25519.PrivateKey))
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", ErrSigning, err)
 	}
@@ -63,7 +84,7 @@ func (j *JWTManager) IssueToken(userID string) (string, error) {
 
 func (j *JWTManager) VerifyToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, ErrValidation
 		}
 		return j.publicKey, nil
