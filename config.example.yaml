@@ -5,6 +5,7 @@ grpc_server:
   address: ":9090"
 jwt:
   issuer: auth-service
-  expires_in: 12h
+  access_expires_in: 12h
+  refresh_expires_in: 720h
   public_key_path: jwtRS256.key.pub   
   private_key_path: jwtRS256.key

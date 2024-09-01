@@ -16,3 +16,11 @@ POST http://localhost:8081/register
 #### 
 
 GET http://localhost:8081/build
+
+#### 
+
+POST http://localhost:8081/refresh_tokens
+
+{
+    "refreshToken":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjUyNDcxNjUsImlhdCI6MTcyNTIwMzk2NSwiaXNzIjoiYXV0aC1zZXJ2aWNlIiwic3ViIjoicXFAcXEucXEiLCJ0eXBlIjoiYWNjZXNzIn0.aKKT-oY7QsI_gC-90i0RTk3WMeZ61PcyNovN1a9atJGCSDC3iK_l0c4ykLpY5aFdzDlwMIqFQ20ho44RgfpfnGtwonaMYMvV48Snir7ZrpoLQbJGNZOozvq1NiDEX8FO5Y8PgdbyuZp346it4UeMlt6T_vjobWHPectb6AZn_1X3xbjOHuZfb3AschxHh6rzUcadlrpYQrgTpkRMPRn9Z13-1NnYVzHM_s3m_7beyrKvyFDOAyVamIOU5zTfxlBJSqaL_N6De8osKTsw7yiVbi0lnkznt7mBzuA4KUMLWcRwi1JkulN4JoWiLdauZBO9qzOC-foQ5qT8oqE4jbGQcw"
+}

@@ -34,9 +34,11 @@ func TestGRPCGateway(t *testing.T) {
 	passwordHasher := crypto.NewPasswordHasher()
 	jwtManager, err := jwt.NewJWTManager(
 		cfg.JWT.Issuer,
-		cfg.JWT.ExpiresIn,
+		cfg.JWT.AccessExpiresIn,
+		cfg.JWT.RefreshExpiresIn,
 		[]byte(cfg.JWT.PublicKey),
-		[]byte(cfg.JWT.PrivateKey))
+		[]byte(cfg.JWT.PrivateKey),
+		&storage)
 	assert.NoError(t, err)
 
 	grpcAddress := ":9090"

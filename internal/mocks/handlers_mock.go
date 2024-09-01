@@ -145,19 +145,19 @@ func (m *MockJWTManager) EXPECT() *MockJWTManagerMockRecorder {
 	return m.recorder
 }
 
-// IssueToken mocks base method.
-func (m *MockJWTManager) IssueToken(userID string) (string, error) {
+// IssueAccessToken mocks base method.
+func (m *MockJWTManager) IssueAccessToken(userID string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IssueToken", userID)
+	ret := m.ctrl.Call(m, "IssueAccessToken", userID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IssueToken indicates an expected call of IssueToken.
-func (mr *MockJWTManagerMockRecorder) IssueToken(userID any) *gomock.Call {
+func (mr *MockJWTManagerMockRecorder) IssueAccessToken(userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IssueToken", reflect.TypeOf((*MockJWTManager)(nil).IssueToken), userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IssueAccessToken", reflect.TypeOf((*MockJWTManager)(nil).IssueAccessToken), userID)
 }
 
 // VerifyToken mocks base method.
@@ -173,4 +173,35 @@ func (m *MockJWTManager) VerifyToken(tokenString string) (*jwt.Token, error) {
 func (mr *MockJWTManagerMockRecorder) VerifyToken(tokenString any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockJWTManager)(nil).VerifyToken), tokenString)
+}
+
+// IssueRefreshToken mocks base method.
+func (m *MockJWTManager) IssueRefreshToken(userID string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IssueRefreshToken", userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IssueRefreshToken indicates an expected call of IssueToken.
+func (mr *MockJWTManagerMockRecorder) IssueRefreshToken(userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IssueAccessToken", reflect.TypeOf((*MockJWTManager)(nil).IssueRefreshToken), userID)
+}
+
+// RefreshAccessToken mocks base method.
+func (m *MockJWTManager) RefreshTokens(userID string) (string, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshTokens", userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// RefreshAccessToken indicates an expected call of IssueToken.
+func (mr *MockJWTManagerMockRecorder) RefreshTokens(userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshTokens", reflect.TypeOf((*MockJWTManager)(nil).RefreshTokens), userID)
 }

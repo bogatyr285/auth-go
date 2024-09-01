@@ -20,8 +20,10 @@ type CryptoPassword interface {
 }
 
 type JWTManager interface {
-	IssueToken(userID string) (string, error)
+	IssueAccessToken(userID string) (string, error)
+	IssueRefreshToken(userID string) (string, error)
 	VerifyToken(tokenString string) (*jwt.Token, error)
+	RefreshTokens(refreshTokenString string) (string, string, error)
 }
 
 type AuthUseCase struct {
@@ -57,13 +59,19 @@ func (u AuthUseCase) PostLogin(ctx context.Context, request gen.PostLoginRequest
 		return gen.PostLogin401JSONResponse{Error: "unauth"}, nil
 	}
 
-	token, err := u.jm.IssueToken(user.Username)
+	accessToken, err := u.jm.IssueAccessToken(user.Username)
+	if err != nil {
+		return gen.PostLogin500JSONResponse{}, err
+	}
+
+	refreshToken, err := u.jm.IssueRefreshToken(user.Username)
 	if err != nil {
 		return gen.PostLogin500JSONResponse{}, err
 	}
 
 	return gen.PostLogin200JSONResponse{
-		AccessToken: token,
+		AccessToken: accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
@@ -97,5 +105,17 @@ func (u AuthUseCase) GetBuildinfo(ctx context.Context, request gen.GetBuildinfoR
 		GoVersion:  u.bi.GoVersion,
 		Os:         u.bi.OS,
 		Version:    u.bi.Version,
+	}, nil
+}
+
+func (u AuthUseCase) PostRefreshTokens(ctx context.Context, request gen.PostRefreshTokensRequestObject) (gen.PostRefreshTokensResponseObject, error) {
+	accessToken, refreshToken, err := u.jm.RefreshTokens(request.Body.RefreshToken)
+	if err != nil {
+		return gen.PostRefreshTokens400JSONResponse{Error: err.Error()}, nil // TODO handling various errors
+	}
+
+	return gen.PostRefreshTokens200JSONResponse{
+		AccessToken: accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
