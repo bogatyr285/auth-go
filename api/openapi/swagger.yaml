@@ -86,6 +86,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /refresh_tokens:
+    post:
+      summary: Refresh JWT Tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokensRequest'
+      responses:
+        '200':
+          description: User successfully loggedin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokensResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
 components:
   schemas:
@@ -136,8 +171,12 @@ components:
         accessToken:
           type: string
           description: JWT token for accessing protected routes
+        refreshToken:
+          type: string
+          description: JWT token for refresh access token
       required:
         - accessToken
+        - refreshToken
     
     BuildInfo:
       type: object
@@ -171,6 +210,28 @@ components:
         - os
         - arch
         - compiler
+
+    RefreshTokensRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: JWT Refresh token
+      required:
+        - refreshToken
+
+    RefreshTokensResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT token for accessing protected routes
+        refreshToken:
+          type: string
+          description: JWT token for refresh access token
+      required:
+        - accessToken
+        - refreshToken  
 
     ErrorResponse:
       type: object

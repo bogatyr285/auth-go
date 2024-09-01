@@ -28,8 +28,10 @@ type CryptoPassword interface {
 
 //go:generate mockgen -source=handlers.go -destination=../../../mocks/handlers_mock.go -package mock
 type JWTManager interface {
-	IssueToken(userID string) (string, error)
+	IssueAccessToken(userID string) (string, error)
+	IssueRefreshToken(userID string) (string, error)
 	VerifyToken(tokenString string) (*jwt.Token, error)
+	RefreshTokens(refreshTokenString string) (string, string, error)
 }
 
 var ErrAccessDenied = errors.New("access_denied")
@@ -90,7 +92,7 @@ func (h *AuthHandlers) LoginUser(ctx context.Context, req *authpb.LoginUserReque
 		return nil, status.Error(codes.Unauthenticated, ErrAccessDenied.Error())
 	}
 
-	token, err := h.jm.IssueToken(user.Username)
+	token, err := h.jm.IssueAccessToken(user.Username)
 	if err != nil {
 		return nil, err
 	}

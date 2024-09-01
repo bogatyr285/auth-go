@@ -28,10 +28,11 @@ type Storage struct {
 }
 
 type JWT struct {
-	Issuer     string        `yaml:"issuer"`
-	ExpiresIn  time.Duration `yaml:"expires_in"`
-	PublicKey  string        `yaml:"public_key_path"`
-	PrivateKey string        `yaml:"private_key_path"`
+	Issuer           string        `yaml:"issuer"`
+	AccessExpiresIn  time.Duration `yaml:"access_expires_in"`
+	RefreshExpiresIn time.Duration `yaml:"refresh_expires_in"`
+	PublicKey        string        `yaml:"public_key_path"`
+	PrivateKey       string        `yaml:"private_key_path"`
 }
 
 func Parse(s string) (*Config, error) {

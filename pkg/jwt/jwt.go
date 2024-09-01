@@ -1,7 +1,8 @@
 package jwt
 
 import (
-	"crypto/rsa"
+	"crypto/ed25519"
+	"crypto/rand"
 	"fmt"
 	"time"
 
@@ -11,50 +12,57 @@ import (
 var (
 	// for now there's no reason for err segregation & uniq processing
 	// but its good idea to have list of error which module can return
-	ErrKeyParsing      = fmt.Errorf("parsing error")
-	ErrTokenGeneration = fmt.Errorf("token generation error")
-	ErrSigning         = fmt.Errorf("signing error")
-	ErrValidation      = fmt.Errorf("token validation errror")
+	ErrKeyParsing       = fmt.Errorf("parsing error")
+	ErrTokenGeneration  = fmt.Errorf("token generation error")
+	ErrSigning          = fmt.Errorf("signing error")
+	ErrValidation       = fmt.Errorf("token validation errror")
+	ErrInvalidTokenType = fmt.Errorf("invalid token type")
+	ErrRefreshTokenExp  = fmt.Errorf("refresh token expired")
 )
 
-type JWTManager struct {
-	issuer     string
-	expiresIn  time.Duration
-	publicKey  interface{}
-	privateKey interface{}
+type JWTRefreshTokenRepository interface {
+	StoreRefreshToken(token string, userID string, issuedAt, expiresAt time.Time) error
+	IsRefreshTokenValid(token string) (bool, string, error)
+	RevokeRefreshToken(token string) error
 }
 
-func NewJWTManager(issuer string, expiresIn time.Duration, publicKey, privateKey []byte) (*JWTManager, error) {
-	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
-	}
-	// TODO use Ed algs
+type JWTManager struct {
+	issuer           string
+	accessExpiresIn  time.Duration
+	refreshExpiresIn time.Duration
+	publicKey        ed25519.PublicKey
+	privateKey       ed25519.PrivateKey
+	db               JWTRefreshTokenRepository
+}
 
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+func NewJWTManager(issuer string, accessExpiresIn time.Duration, refreshExpiresIn time.Duration, publicKey, privateKey []byte, db JWTRefreshTokenRepository) (*JWTManager, error) {
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrKeyParsing, err)
 	}
 
 	return &JWTManager{
-		issuer:     issuer,
-		expiresIn:  expiresIn,
-		publicKey:  pubKey,
-		privateKey: privKey,
+		issuer:           issuer,
+		accessExpiresIn:  accessExpiresIn,
+		refreshExpiresIn: refreshExpiresIn,
+		publicKey:        pubKey,
+		privateKey:       privKey,
+		db:               db,
 	}, nil
 }
 
-func (j *JWTManager) IssueToken(userID string) (string, error) {
+func (j *JWTManager) IssueAccessToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
-		"iss": j.issuer,
-		"sub": userID,
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(j.expiresIn).Unix(),
+		"iss":  j.issuer,
+		"sub":  userID,
+		"iat":  time.Now().Unix(),
+		"exp":  time.Now().Add(j.accessExpiresIn).Unix(),
+		"type": "access",
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 
-	signed, err := token.SignedString(j.privateKey.(*rsa.PrivateKey))
+	signed, err := token.SignedString(j.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", ErrSigning, err)
 	}
@@ -63,7 +71,7 @@ func (j *JWTManager) IssueToken(userID string) (string, error) {
 
 func (j *JWTManager) VerifyToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, ErrValidation
 		}
 		return j.publicKey, nil
@@ -76,4 +84,64 @@ func (j *JWTManager) VerifyToken(tokenString string) (*jwt.Token, error) {
 	}
 
 	return token, nil
+}
+
+func (j *JWTManager) IssueRefreshToken(userID string) (string, error) {
+	claims := jwt.MapClaims{
+		"iss":  j.issuer,
+		"sub":  userID,
+		"iat":  time.Now().Unix(),
+		"exp":  time.Now().Add(j.refreshExpiresIn).Unix(),
+		"type": "refresh",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+
+	signed, err := token.SignedString(j.privateKey)
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", ErrSigning, err)
+	}
+
+	err = j.db.StoreRefreshToken(signed, userID, time.Now(), time.Now().Add(j.refreshExpiresIn))
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", ErrTokenGeneration, err)
+	}
+
+	return signed, nil
+}
+
+func (j *JWTManager) RefreshTokens(refreshTokenString string) (string, string, error) {
+	valid, userID, err := j.db.IsRefreshTokenValid(refreshTokenString)
+	if err != nil {
+		return "", "", fmt.Errorf("%w: %s", ErrValidation, err)
+	}
+	if !valid {
+		return "", "", ErrRefreshTokenExp
+	}
+
+	token, err := j.VerifyToken(refreshTokenString)
+	if err != nil {
+		return "", "", err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || claims["type"] != "refresh" {
+		return "", "", ErrInvalidTokenType
+	}
+
+	newAccessToken, err := j.IssueAccessToken(userID)
+	if err != nil {
+		return "", "", err
+	}
+	newRefreshToken, err := j.IssueRefreshToken(userID)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = j.db.RevokeRefreshToken(refreshTokenString)
+	if err != nil {
+		return "", "", err
+	}
+
+	return newAccessToken, newRefreshToken, nil
 }

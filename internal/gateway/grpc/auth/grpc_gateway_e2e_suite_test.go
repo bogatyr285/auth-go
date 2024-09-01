@@ -56,9 +56,11 @@ func (s *grpcGatewaySuite) SetupSuite() {
 	passwordHasher := crypto.NewPasswordHasher()
 	s.jwtManager, err = jwt.NewJWTManager(
 		s.cfg.JWT.Issuer,
-		s.cfg.JWT.ExpiresIn,
+		s.cfg.JWT.AccessExpiresIn,
+		s.cfg.JWT.RefreshExpiresIn,
 		[]byte(s.cfg.JWT.PublicKey),
-		[]byte(s.cfg.JWT.PrivateKey))
+		[]byte(s.cfg.JWT.PrivateKey),
+		&s.storage)
 	s.Require().NoError(err)
 
 	// Set up GRPC server and Gateway

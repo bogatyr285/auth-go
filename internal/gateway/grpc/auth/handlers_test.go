@@ -55,7 +55,7 @@ func TestLoginUser(t *testing.T) {
 					Return(true)
 
 				mockJWTManager.EXPECT().
-					IssueToken("user1").
+					IssueAccessToken("user1").
 					Return("validtoken", nil)
 			},
 			expectedResponse: &authpb.LoginUserResponse{
@@ -124,7 +124,7 @@ func TestLoginUser(t *testing.T) {
 					Return(true)
 
 				mockJWTManager.EXPECT().
-					IssueToken("user1").
+					IssueAccessToken("user1").
 					Return("", errors.New("token issuance error"))
 			},
 			expectedResponse: nil,

@@ -55,9 +55,11 @@ func NewServeCmd() *cobra.Command {
 			passwordHasher := crypto.NewPasswordHasher()
 			jwtManager, err := jwt.NewJWTManager(
 				cfg.JWT.Issuer,
-				cfg.JWT.ExpiresIn,
+				cfg.JWT.AccessExpiresIn,
+				cfg.JWT.RefreshExpiresIn,
 				[]byte(cfg.JWT.PublicKey),
-				[]byte(cfg.JWT.PrivateKey))
+				[]byte(cfg.JWT.PrivateKey),
+				&storage)
 			if err != nil {
 				return err
 			}
